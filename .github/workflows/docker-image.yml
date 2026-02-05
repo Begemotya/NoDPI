@@ -1,0 +1,41 @@
+name: Build and Push
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ["ubuntu-latest"]
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Login to Github Packages
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Define metadata for images
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/Begemotya/nodpi
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Build and push images
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
